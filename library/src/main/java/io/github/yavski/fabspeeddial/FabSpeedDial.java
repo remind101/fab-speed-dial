@@ -86,6 +86,19 @@ public class FabSpeedDial extends LinearLayout implements View.OnClickListener {
 
     }
 
+    /**
+     * Notify me of menu visibility changes
+     */
+    public interface MenuVisibilityListener {
+        /**
+         * Called whenever the menu visibility changes. You should rely on this for displaying
+         * or hiding underlays.
+         *
+         * @param visible true iff the menu is currently displayed
+         */
+        void onMenuShown(boolean visible);
+    }
+
     private static final String TAG = FabSpeedDial.class.getSimpleName();
 
     private static final int VSYNC_RHYTHM = 16;
@@ -100,6 +113,7 @@ public class FabSpeedDial extends LinearLayout implements View.OnClickListener {
     private static final int DEFAULT_MENU_POSITION = BOTTOM_END;
 
     private MenuListener menuListener;
+    private MenuVisibilityListener visibilityListener;
     private NavigationMenu navigationMenu;
     private Map<FloatingActionButton, MenuItem> fabMenuItemMap;
     private Map<CardView, MenuItem> cardViewMenuItemMap;
@@ -315,6 +329,11 @@ public class FabSpeedDial extends LinearLayout implements View.OnClickListener {
         this.menuListener = menuListener;
     }
 
+    /**
+     * Register callbacks for menu visibility changes
+     */
+    public void setMenuVisibilityListener(MenuVisibilityListener listener) { this.visibilityListener = listener; }
+
     private void addMenuItems() {
         ViewCompat.setAlpha(menuItemsLayout, 1f);
         for (int i = 0; i < navigationMenu.size(); i++) {
@@ -362,6 +381,10 @@ public class FabSpeedDial extends LinearLayout implements View.OnClickListener {
     }
 
     private void removeFabMenuItems() {
+        if (visibilityListener != null) {
+            visibilityListener.onMenuShown(false);
+        }
+
         ViewCompat.animate(menuItemsLayout)
                 .setDuration(getResources().getInteger(android.R.integer.config_shortAnimTime))
                 .alpha(0f)
@@ -385,6 +408,10 @@ public class FabSpeedDial extends LinearLayout implements View.OnClickListener {
 
     private void animateFabMenuItemsIn() {
         final int count = menuItemsLayout.getChildCount();
+
+        if (count != 0 && visibilityListener != null) {
+            visibilityListener.onMenuShown(true);
+        }
 
         if (isGravityBottom()) {
             for (int i = count - 1; i >= 0; i--) {
@@ -481,6 +508,14 @@ public class FabSpeedDial extends LinearLayout implements View.OnClickListener {
         }
 
         return super.dispatchKeyEventPreIme(event);
+    }
+
+    /**
+     * Immediately close the menu if it's open
+     */
+    public void closeMenu() {
+        fab.setSelected(false);
+        removeFabMenuItems();
     }
 
 }
